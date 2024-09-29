@@ -32,8 +32,7 @@ buildEnv rec {
     termproxy
     vncterm
     wget
-#    util-linux # TODO wtf how is this line the one breaking it
-  ] ++ lib.optionals enableLinstor [ linstor-client ];
+  ] ++ lib.optionals enableLinstor [ linstor-client util-linux ];
 
   meta = with lib; {
     description = "A complete, open-source server management platform for enterprise virtualization";
