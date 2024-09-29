@@ -72,7 +72,7 @@ in
       };
       users.groups.www-data = { };
 
-      environment.systemPackages = [ cfg.package ];
+#      environment.systemPackages = [ cfg.package ];
       environment.etc.issue.enable = false;
 
       networking.firewall.allowedTCPPorts = [
