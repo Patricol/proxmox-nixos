@@ -64,7 +64,7 @@ in
       };
 
       services.rpcbind.enable = true;
-      services.rrdcached.enable = true; # TODO this also doesn't contribute?
+      services.rrdcached.enable = true;
 
       users.users.www-data = {
         isSystemUser = true;
@@ -73,6 +73,7 @@ in
       users.groups.www-data = { };
 
 #      environment.systemPackages = [ cfg.package ]; # TODO wtf how is this line the one breaking it
+      environment.systemPackages = [ pkgs.proxmox-ve ]; # TODO wtf how is this line the one breaking it
       environment.etc.issue.enable = false;
 
       networking.firewall.allowedTCPPorts = [
