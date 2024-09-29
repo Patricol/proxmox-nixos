@@ -64,7 +64,7 @@ in
       };
 
       services.rpcbind.enable = true;
-      services.rrdcached.enable = true;
+#      services.rrdcached.enable = true;
 
       users.users.www-data = {
         isSystemUser = true;
