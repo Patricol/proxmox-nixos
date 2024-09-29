@@ -32,7 +32,7 @@ buildEnv rec {
     termproxy
     vncterm
     wget
-    util-linux # TODO wtf how is this line the one breaking it
+#    util-linux # TODO wtf how is this line the one breaking it
   ] ++ lib.optionals enableLinstor [ linstor-client ];
 
   meta = with lib; {
