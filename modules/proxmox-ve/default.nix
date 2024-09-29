@@ -16,15 +16,15 @@ in
     camillemndn
   ];
 
-#  imports = [
-#    ./cluster.nix
-#    # ./firewall.nix
-#    # ./ha-manager.nix
-#    ./linstor.nix
-#    ./manager.nix
-#    ./rrdcached.nix
-#    ./vms.nix
-#  ];
+  imports = [
+    ./cluster.nix
+    # ./firewall.nix
+    # ./ha-manager.nix
+    ./linstor.nix
+    ./manager.nix
+    ./rrdcached.nix
+    ./vms.nix
+  ];
 
   options.services.proxmox-ve = {
     enable = mkEnableOption "Proxmox VE";
@@ -72,7 +72,7 @@ in
       };
       users.groups.www-data = { };
 
-#      environment.systemPackages = [ cfg.package ];
+#      environment.systemPackages = [ cfg.package ]; # TODO wtf how is this line the one breaking it
       environment.etc.issue.enable = false;
 
       networking.firewall.allowedTCPPorts = [
