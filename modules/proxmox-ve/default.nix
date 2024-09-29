@@ -72,8 +72,7 @@ in
       };
       users.groups.www-data = { };
 
-      environment.systemPackages = [ cfg.package ]; # TODO wtf how is this line the one breaking it
-#      environment.systemPackages = [ pkgs.proxmox-ve ]; # TODO wtf how is this line the one breaking it
+      environment.systemPackages = [ cfg.package ];
       environment.etc.issue.enable = false;
 
       networking.firewall.allowedTCPPorts = [
