@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ lib, ... }:
 
 with lib;
 
@@ -669,7 +669,11 @@ in
       default = null;
     };
 
-    keephugepages = mkEnableOption "Use together with hugepages. If enabled, hugepages will not not be deleted after VM shutdown and can be used for subsequent starts.";
+    keephugepages = mkOption {
+      type = types.nullOr types.bool;
+      default = null;
+      description = "Use together with hugepages. If enabled, hugepages will not not be deleted after VM shutdown and can be used for subsequent starts.";
+    };
 
     keyboard = mkOption {
       type = types.nullOr (
@@ -1107,7 +1111,11 @@ in
     spice_enhancements = mkOption {
       type = types.submodule {
         options = {
-          foldersharing = mkEnableOption "Enable or disable folder sharing through SPICE.";
+          foldersharing = mkOption {
+            type = types.nullOr types.bool;
+            default = null;
+            description = "Enable or disable folder sharing through SPICE.";
+          };
           videostreaming = mkOption {
             type = types.nullOr (
               types.enum [
@@ -1236,11 +1244,19 @@ in
             type = types.nullOr (
               types.enum [
                 "cirrus"
-                "std"
-                "vmware"
-                "qxl"
-                "virtio"
                 "none"
+                "qxl"
+                "qxl2"
+                "qxl3"
+                "qxl4"
+                "serial2"
+                "serial0"
+                "serial1"
+                "serial3"
+                "std"
+                "virtio"
+                "virtio-gl"
+                "vmware"
               ]
             );
             default = null;

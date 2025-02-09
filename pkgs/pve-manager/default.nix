@@ -3,7 +3,7 @@
   stdenv,
   fetchgit,
   makeWrapper,
-  perl536,
+  perl538,
   proxmox-widget-toolkit,
   proxmox-acme,
   pve-docs,
@@ -24,12 +24,17 @@
   iproute2,
   termproxy,
   shadow,
+  sqlite,
   wget,
   util-linux,
+  libfaketime,
+  corosync,
+  openssl,
+  systemd,
 }:
 
 let
-  perlDeps = with perl536.pkgs; [
+  perlDeps = with perl538.pkgs; [
     FileReadBackwards
     NetDNS
     PodParser
@@ -39,10 +44,10 @@ let
     pve-http-server
   ];
 
-  perlEnv = perl536.withPackages (_: perlDeps);
+  perlEnv = perl538.withPackages (_: perlDeps);
 in
 
-perl536.pkgs.toPerlModule (
+perl538.pkgs.toPerlModule (
   stdenv.mkDerivation rec {
     pname = "pve-manager";
     version = "8.2.4";
@@ -87,7 +92,7 @@ perl536.pkgs.toPerlModule (
       "PVERELEASE=8.0"
       "VERSION=${version}"
       "REPOID=nixos"
-      "PERLLIBDIR=$(out)/${perl536.libPrefix}/${perl536.version}"
+      "PERLLIBDIR=$(out)/${perl538.libPrefix}/${perl538.version}"
       "WIDGETKIT=${proxmox-widget-toolkit}/share/javascript/proxmox-widget-toolkit/proxmoxlib.js"
       "BASH_COMPLETIONS="
       "ZSH_COMPLETIONS="
@@ -110,7 +115,16 @@ perl536.pkgs.toPerlModule (
         -e "s|/usr/share/zoneinfo|${tzdata}/share/zoneinfo|" \
         -e "s|/usr/share/pve-xtermjs|${pve-xtermjs}/share/pve-xtermjs|" \
         -Ee "s|(/usr)?/s?bin/||" \
-        -e "s|/usr/share/novnc-pve|${pve-novnc}/share/webapps/novnc|" 
+        -e "s|/usr/share/novnc-pve|${pve-novnc}/share/webapps/novnc|" \
+        -e "s/Ceph Nautilus required/Ceph Nautilus required - PATH: \$ENV{PATH}\\\n/"
+
+      # Ceph systemd units in NixOS do not use templates
+      find $out/lib -type f -wholename "*Ceph*" | xargs sed -i -e "s/\\\@/-/g"
+
+      sed -i $out/${perl538.libPrefix}/${perl538.version}/PVE/Ceph/Tools.pm \
+        -e 's|=> "ceph|=> "${ceph}/bin/ceph|' \
+        -e "s|=> 'ceph|=> '${ceph}/bin/ceph|" \
+        -e "s|ceph-authtool|${ceph}/bin/ceph-authtool|"
 
       find $out/bin -type f | xargs sed -i \
         -e "/ENV{'PATH'}/d"
@@ -120,20 +134,25 @@ perl536.pkgs.toPerlModule (
           --prefix PATH : ${
             lib.makeBinPath [
               ceph
-              gzip
-              openssh
-              util-linux
+              corosync
               gnupg
-              openvswitch
-              pve-qemu
+              gzip
               iproute2
-              termproxy
+              libfaketime
+              openssh
+              openssl
+              openvswitch
               (pve-ha-manager.override { inherit enableLinstor; })
+              pve-qemu
               shadow
+              sqlite
+              systemd
+              termproxy
+              util-linux
               wget
             ]
           } \
-          --prefix PERL5LIB : $out/${perl536.libPrefix}/${perl536.version}
+          --prefix PERL5LIB : $out/${perl538.libPrefix}/${perl538.version}
       done      
     '';
 
