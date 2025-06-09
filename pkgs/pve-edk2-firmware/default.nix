@@ -5,48 +5,64 @@
   pkgsCross,
   stdenv, 
   fetchgit,
+  writeShellScriptBin,
   ... 
 }:
 
 stdenv.mkDerivation rec {
   pname = "pve-edk2-firmware";
-  version = "4.2023.08-4";
+  version = "4.2025.02-3";
 
-  src = fetchgit rec {
+  src = fetchgit {
     url = "git://git.proxmox.com/git/${pname}.git";
-    rev = "17443032f78eaf9ae276f8df9d10c64beec2e048";
-    sha256 = "sha256-efDcC+kdCXDf64N+kNXDQIpsCiAUP2DyKmXZCpx5MAo=";
+    rev = "d6146dd6dfc084215dfaa59b95bcf6177e988cb5";
+    sha256 = "sha256-6zh9nTdR5+1zZODJ1JBtWkJyo+ioeZoxk7yWtmLBekc=";
 
-    # FIXME: remove manual fetch submodule if submodule url fixed in next release
+    # FIXME: remove manual fetch submodule if 
+    # https://git.proxmox.com/?p=mirror_edk2.git is accessible again
     fetchSubmodules = false;
     leaveDotGit = true;
 
     postFetch = ''
-      cd $out
-      git remote add origin ${url}
-      git fetch
-      git branch --set-upstream-to=origin/master
-      git reset --hard ${rev}
+      pushd $out
+      git reset
 
-      sed -i "s#../mirror_edk2#git://git.proxmox.com/git/mirror_edk2.git#g" .gitmodules
-      git submodule sync
-      git submodule update --init --depth 1
-      ls -lah edk2
-      sed -i "s#github.com/Zeex/subhook#github.com/tianocore/edk2-subhook#g" edk2/.gitmodules
-      git submodule update --init --recursive
-      git clean -fxd
+      # Switch to official edk2 git repo
+      substituteInPlace ./.gitmodules \
+        --replace-fail 'url = ../mirror_edk2' 'url = https://github.com/tianocore/edk2.git'
+
+      git submodule update --init --recursive -j ''${NIX_BUILD_CORES:-1} --depth 1
+
+      # Remove .git dirs
+      find . -name .git -type f -exec rm -rf {} +
       rm -rf .git/
+      popd
     '';
   };
 
   buildInputs = [ ];
 
-  hardeningDisable = [ "format" "fortify" "trivialautovarinit" ];
+  hardeningDisable = [ 
+    "format" 
+    "fortify" 
+    "trivialautovarinit" 
+  ];
 
   nativeBuildInputs = with pkgs; [
-    dpkg fakeroot qemu
-    bc dosfstools acpica-tools mtools nasm libuuid
-    qemu-utils libisoburn python3
+    dpkg
+    fakeroot 
+    qemu
+    bc 
+    dosfstools 
+    acpica-tools 
+    mtools 
+    nasm 
+    libuuid
+    qemu-utils 
+    libisoburn 
+    python3
+    # Mock debhelper
+    (writeShellScriptBin "dh" "true") 
   ] ++ (lib.optional (stdenv.hostPlatform.system != "aarch64-linux") pkgsCross.aarch64-multiplatform.stdenv.cc)
     ++ (lib.optional (stdenv.hostPlatform.system != "x86_64-linux") pkgsCross.gnu64.stdenv.cc)
     ++ (lib.optional (stdenv.hostPlatform.system != "riscv64-linux") pkgsCross.riscv64.stdenv.cc);
@@ -66,10 +82,6 @@ stdenv.mkDerivation rec {
       substituteInPlace ./debian/rules \
         --replace-warn 'PYTHONPATH=$(CURDIR)/debian/python' 'PYTHONPATH=$(CURDIR)/debian/python:${pythonPath}'
 
-      # Skip dh calls because we don't need debhelper
-      substituteInPlace ./debian/rules \
-        --replace-warn 'dh $@' ': dh $@'
-
       # Patch cross compiler paths
       substituteInPlace ./debian/rules ./**/CMakeLists.txt \
         --replace-warn 'aarch64-linux-gnu-' '${pkgsCross.aarch64-multiplatform.stdenv.cc.targetPrefix}'
@@ -78,16 +90,11 @@ stdenv.mkDerivation rec {
       sed -i '/^EDK2_TOOLCHAIN *=/a export $(EDK2_TOOLCHAIN)_BIN=${pkgsCross.gnu64.stdenv.cc.targetPrefix}' ./debian/rules
     '';
 
-  buildPhase = 
-    let
-      mainVersion = builtins.head (lib.splitString "-" version);
-    in
-    ''
-      make ${pname}_${mainVersion}.orig.tar.gz
-      pushd ${pname}-${mainVersion}
-      dpkg-source -b .
-      make -f debian/rules override_dh_auto_build
-    '';
+  buildPhase = ''
+    mv ./debian ./edk2
+    pushd ./edk2
+    make -f ./debian/rules override_dh_auto_build
+  '';
 
   installPhase = ''
     # Copy files as mentioned in *.install files
@@ -124,6 +131,6 @@ stdenv.mkDerivation rec {
   meta = {
     description = "edk2 based UEFI firmware modules for virtual machines";
     homepage = "git://git.proxmox.com/git/${pname}.git";
-    maintainers = with lib.maintainers; [ ];
+    maintainers = with lib.maintainers; [ codgician julienmalka ];
   };
  }
